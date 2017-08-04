@@ -7,16 +7,71 @@
 //
 
 import UIKit
+import FacebookCore
+import FacebookLogin
 
 @UIApplicationMain
-class AppDelegate: UIResponder, UIApplicationDelegate {
+class AppDelegate: UIResponder, UIApplicationDelegate, GIDSignInDelegate  {
 
     var window: UIWindow?
 
 
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplicationLaunchOptionsKey: Any]?) -> Bool {
+        
+        let tab:UITabBarController = self.window?.rootViewController as! UITabBarController
+        tab.delegate = PrincipalViewController()
+        
+        if UserAppInfo.isUserLoggedIn{
+            llamaWebServiceNotif(idUsuario: UserLoggedWithMeetNeu.id, tabBarItem: (tab.viewControllers?[3].tabBarItem)!)
+        }
+        
         // Override point for customization after application launch.
+        // Override point for customization after application launch.
+        var configureError: NSError?
+        GGLContext.sharedInstance().configureWithError(&configureError)
+        assert(configureError == nil, "Error configuring Google services: \(String(describing: configureError))")
+        
+        GIDSignIn.sharedInstance().delegate = self
+        SDKApplicationDelegate.shared.application(application, didFinishLaunchingWithOptions: launchOptions)
+        
         return true
+    }
+    
+    
+    
+
+    
+    func sign(_ signIn: GIDSignIn!, didSignInFor user: GIDGoogleUser!, withError error: Error!) {
+        if (error == nil) {
+            /*Perform any operations on signed in user here.
+            let userId = user.userID                  // For client-side use only!
+            let idToken = user.authentication.idToken // Safe to send to the server
+            let fullName = user.profile.name
+            let givenName = user.profile.givenName
+            let familyName = user.profile.familyName
+            let email = user.profile.email
+            // ...
+            print("si se curo");
+            */
+            UserAppInfo.isUserLoggedIn = true
+            UserAppInfo.email = user.profile.email!
+            UserAppInfo.social_media = "3"
+            UserAppInfo.avatar = "\(user.profile.imageURL(withDimension: 256))"
+            UserAppInfo.social_id_no = user.userID!
+            UserAppInfo.gender = "google"
+            UserAppInfo.complete_name = user.profile.name!
+            UserAppInfo.first_name = user.profile.givenName!
+            NotificationCenter.default.post(name: NSNotification.Name(rawValue: "notif"), object: nil)
+        } else {
+            print("\(error.localizedDescription)")
+        }
+    }
+    
+    
+    
+    
+    func application(_ app: UIApplication, open url: URL, options: [UIApplicationOpenURLOptionsKey : Any] = [:]) -> Bool {
+        return GIDSignIn.sharedInstance().handle(url as URL!, sourceApplication: options[UIApplicationOpenURLOptionsKey.sourceApplication] as? String, annotation: options[.annotation]) || FBSDKApplicationDelegate.sharedInstance().application(app, open: url, options: options)
     }
 
     func applicationWillResignActive(_ application: UIApplication) {
@@ -40,7 +95,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     func applicationWillTerminate(_ application: UIApplication) {
         // Called when the application is about to terminate. Save data if appropriate. See also applicationDidEnterBackground:.
     }
-
-
+    
+    
 }
 
